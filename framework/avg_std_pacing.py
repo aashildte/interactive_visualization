@@ -10,7 +10,7 @@ import textwrap
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .value_structure import valid_combination
+from .value_structure import valid_combination, get_all_combinations
 
 
 def plot_values(key, axis, headers, set_label, param_mapping, \
@@ -32,27 +32,41 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
 
     """
 
-
     try:
-        time = time_mapping[key[:-3]]
-        values = param_mapping[key]
+        key_avg = key + ("Average", "Vector norm")
+        key_std = key + ("Standard deviation", "Vector norm")
+
+        time = time_mapping[key[:-1]]
+        values_avg = param_mapping[key_avg]
+        values_std = param_mapping[key_std]
     except KeyError:
         print("No data found for key ", key)
         return
 
-    if set_label:
-        labels = [(l + ": " + k) for (l, k) in zip(\
-                    (headers[:-3] + headers[-2:]),
-                    (key[:-3] + key[-2:]))]
+    labels = [k for k in key[:-1]]
+    label_str = ", ".join(labels)
+    label_str = '\n'.join(textwrap.wrap(label_str, 100))
 
-        label_str = ", ".join(labels)
-        label_str = '\n'.join(textwrap.wrap(label_str, 100))
+    np.warnings.filterwarnings('ignore')
 
-        axis.plot(time, values, label=label_str)
-    else:
-        axis.plot(time, values)
+    minvalues = values_avg - values_std
+    maxvalues = values_avg + values_std
 
-    axis.set_ylabel(key[-3])
+    # special cases; TODO needs to be given as input
+    
+    minvalues = np.where(minvalues > 0, minvalues, np.zeros_like(minvalues))
+
+    if "Xmotion" in key:
+        maxvalues = np.where(maxvalues < 1, maxvalues, np.ones(maxvalues.shape))
+
+    # special case end
+
+    axis.plot(time, values_avg) #, label=label_str)
+    axis.fill_between(time, minvalues, \
+            maxvalues, color='gray', alpha=0.5)
+    axis.set_title(label_str)
+
+    axis.set_ylabel(key[-1])
 
 
 def update_args(headers, param_mapping, time_mapping, figsize, \
@@ -79,23 +93,22 @@ def update_args(headers, param_mapping, time_mapping, figsize, \
         print("Please check at least one box in each group")
         return
 
-    plt_map, plt_combinations = get_all_combinations(headers, checkboxes)
-    num_plots = len(plt_map.keys())
+    _, plt_combinations = get_all_combinations(headers, checkboxes)
 
+    num_plots = len(plt_combinations)
     _, axes = plt.subplots(num_plots, 1, figsize=(figsize[0], \
                     figsize[1]*num_plots), sharex=True, squeeze=False)
     axes = axes.flatten()
 
-    for key in plt_combinations:
-        axis = axes[plt_map[key[-3]]]
-        plot_values(key, axis, headers, plt_map[key[-3]] == 0, \
+    for (axis, key) in zip(axes, plt_combinations):
+        plot_values(key, axis, headers, True, \
                 param_mapping, time_mapping)
 
     axes[-1].set_xlabel("Time ($ms$)")
-    axes[0].legend(bbox_to_anchor=(0., 1.05, 1., .105), loc=3, \
-                  mode="expand", borderaxespad=0.)
+
+    #for axis in axes:
+    #    axis.legend(bbox_to_anchor=(0., 1.05, 1., .105), loc=3, \
+    #              mode="expand", borderaxespad=0.)
     plt.tight_layout()
-    plt.savefig("current.png", dpi=300)
+    plt.savefig("current_configuration.png", dpi=300)
     plt.show()
-
-

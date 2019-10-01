@@ -31,7 +31,7 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
 
     """
 
-
+    print(time_mapping.keys())
     try:
         time = time_mapping[key[:-3]]
         values = param_mapping[key]

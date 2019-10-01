@@ -95,7 +95,6 @@ def _populate_param_space(input_params, param_space):
 
     return tuple(key)
 
-
 def _populate_param_mapping(output_values, key_ip, param_space, param_mapping):
     """
 
@@ -116,8 +115,6 @@ def _populate_param_mapping(output_values, key_ip, param_space, param_mapping):
                 key = key_ip + (qtt, ms_points[n_m], dimensions[n_d])
                 param_mapping[key] = \
                     output_values[qtt][:, n_m, n_d]
-
-
 
 def define_param_mappings(all_values):
     """
@@ -169,10 +166,7 @@ def define_param_mappings(all_values):
     for (i, elem) in enumerate(param_space):
         param_space[i] = list(elem)
 
-    headers = input_params + \
-        ["Output value", "Measuring point", "Dimension"]
-
-    return headers, param_space, time_mapping, param_mapping
+    return input_params, param_space, time_mapping, param_mapping
 
 
 def setup_widgets(widgets, headers, param_space):
@@ -199,10 +193,14 @@ def setup_widgets(widgets, headers, param_space):
 
     checkboxes = {}
 
-    for (i, elem) in enumerate(param_space):
+    #for (i, elem) in enumerate(param_space):
+    
+    num_headers = len(headers)
+
+    for i in range(num_headers):
         thisbox = []
         for value in param_space[i]:
-            cbox = widgets.Checkbox(value=(value == elem[0]), \
+            cbox = widgets.Checkbox(value=(value == param_space[i][0]), \
                                     description=str(value), \
                                     disabled=False)
             checkboxes[headers[i] + ";" + str(value)] = cbox

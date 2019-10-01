@@ -36,12 +36,7 @@ def setup(widgets, files, figsize, plt_setup):
 
     """
 
-    all_values = read_values(files)
-    headers, param_space, time_mapping, param_mapping = \
-                define_param_mappings(all_values)
     
-    checkboxes, tabs = setup_widgets(widgets, headers, param_space)
-
     plt_setup_options = ("ms_points", "avg_std_pacing")
     error_msg = "Error: plt_setup expected to be in" + \
             "{}.".format(plt_setup_options)
@@ -49,9 +44,20 @@ def setup(widgets, files, figsize, plt_setup):
     
     if plt_setup == "ms_points":
         from .ms_points import update_args
+        default_headers = ["Tracked quantity", "Measuring point", "Dimension"]
     else:
         from .avg_std_pacing import update_args
+        default_headers = ["Metric"]
 
+    all_values = read_values(files)
+    param_headers, param_space, time_mapping, param_mapping = \
+                define_param_mappings(all_values)
+
+    print(time_mapping.keys())
+
+    headers = param_headers + default_headers
+
+    checkboxes, tabs = setup_widgets(widgets, headers, param_space)
     update = lambda **kw: update_args(headers, param_mapping, \
                                       time_mapping, figsize, kw)
     return update, checkboxes, tabs
