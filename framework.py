@@ -93,7 +93,30 @@ def _populate_param_space(input_params, param_space):
         key.append(value)
         param_space[i].add(value)
 
-    return key
+    return tuple(key)
+
+
+def _populate_param_mapping(output_values, key_ip, param_space, param_mapping):
+    """
+
+    Args:
+        output_values - quantities to plot, over different measuring points
+           and different dimensions
+        key_ip - input parameter key
+        param_space - list of (list of) parameter choices
+        param_mapping - dictionary to populate
+
+    """
+    quantities, ms_points, dimensions = param_space[-3:]
+    for qtt in quantities:
+        _, num_ms_pts, num_dims = output_values[qtt].shape
+
+        for n_m in range(num_ms_pts):
+            for n_d in range(num_dims):
+                key = key_ip + (qtt, ms_points[n_m], dimensions[n_d])
+                param_mapping[key] = \
+                    output_values[qtt][:, n_m, n_d]
+
 
 
 def define_param_mappings(all_values):
@@ -123,11 +146,10 @@ def define_param_mappings(all_values):
     param_mapping = {}
     time_mapping = {}
 
-    quantities, ms_points, dimensions = param_space[-3:]
 
     # iterate through all possible combinations
     # and save values accordingly
- 
+
     for dataset in all_values:
 	# across different input parameters
         assert list(dataset["input_params"].keys()) == input_params, \
@@ -136,27 +158,13 @@ def define_param_mappings(all_values):
         key_ip = _populate_param_space(dataset["input_params"], param_space)
 
         # across different tracked output values
-        assert list(dataset["output_values"].keys()) == quantities, \
+        assert list(dataset["output_values"].keys()) == param_space[-3], \
                 "Error: Output values spaces don't match up."
 
-        key_qt = []
-
-        for q in quantities:
-            #key_qt.append(q)
-
-            # because D, and maybe M, can vary:
-            _, M, D = dataset["output_values"][q].shape
-
-            for m in range(M):
-                #key[-2] = ms_points[m]
-                for d in range(D):
-                    #key[-1] = dimensions[d]
-                    key = key_ip + [q, ms_points[m], dimensions[d]]
-                    param_mapping[tuple(key)] = \
-                        dataset["output_values"][q][:, m, d]
+        _populate_param_mapping(dataset["output_values"], key_ip, param_space, param_mapping)
 
         # + time
-        time_mapping[tuple(key[:-3])] = dataset["time"]
+        time_mapping[key_ip] = dataset["time"]
 
     for (i, elem) in enumerate(param_space):
         param_space[i] = list(elem)
@@ -238,8 +246,8 @@ def get_all_combinations(headers, checkboxes):
 
     plt_map = {}
 
-    for n in range(len(param_list[-3])):
-        plt_map[param_list[-3][n]] = n
+    for i in range(len(param_list[-3])):
+        plt_map[param_list[-3][i]] = i
 
     return plt_map, list(itertools.product(*param_list))
 
@@ -262,22 +270,22 @@ def valid_combination(headers, checkboxes):
     """
     param_check = {}
 
-    for h in headers:
-        param_check[h] = False
+    for header in headers:
+        param_check[header] = False
 
-    for k in checkboxes.keys():
-        key1, _ = k.split(";")
-        if checkboxes[k]:
+    for key in checkboxes.keys():
+        key1, _ = key.split(";")
+        if checkboxes[key]:
             param_check[key1] = True
 
-    for h in headers:
-        if not param_check[h]:
+    for header in headers:
+        if not param_check[header]:
             return False
 
     return True
 
 
-def plot_values(key, axs, headers, plt_map, param_mapping, \
+def plot_values(key, axis, headers, set_label, param_mapping, \
                 time_mapping):
     """
 
@@ -285,11 +293,10 @@ def plot_values(key, axs, headers, plt_map, param_mapping, \
 
     Args:
         key - which combination to plot output for
-        axs - list of axs for the different subplots; updated
+        axis - list of axes for the different subplots; updated
             in this function
         headers - list of possible parameter groups
-        plt_map - dictionary for which quantity that belongs
-            to which subplot
+        set_label; boolean value - set label or not
         param_mapping - dictionary with keys as values,
             quantities as values; subtract information to
             be plotted from this
@@ -305,21 +312,20 @@ def plot_values(key, axs, headers, plt_map, param_mapping, \
         print("No data found for key ", key)
         return
 
-    labels = [(l + ": " + k) for (l, k) in zip(\
+    if set_label:
+        labels = [(l + ": " + k) for (l, k) in zip(\
                     (headers[:-3] + headers[-2:]),
                     (key[:-3] + key[-2:]))]
 
-    label_str = ", ".join(labels)
-    label_str = '\n'.join(textwrap.wrap(label_str, 100))
+        label_str = ", ".join(labels)
+        label_str = '\n'.join(textwrap.wrap(label_str, 100))
 
-    i = plt_map[key[-3]]
-
-    if i == 0:
-        axs[i].plot(time, values, label=label_str)
+        axis.plot(time, values, label=label_str)
     else:
-        axs[i].plot(time, values)
+        axis.plot(time, values)
 
-    axs[i].set_ylabel(key[-3])
+    axis.set_ylabel(key[-3])
+
 
 def update_args(headers, param_mapping, time_mapping, figsize, \
                 checkboxes):
@@ -346,18 +352,19 @@ def update_args(headers, param_mapping, time_mapping, figsize, \
         return
 
     plt_map, plt_combinations = get_all_combinations(headers, checkboxes)
-    N_plots = len(plt_map.keys())
+    num_plots = len(plt_map.keys())
 
-    _, axs = plt.subplots(N_plots, 1, figsize=(figsize[0], \
-                    figsize[1]*N_plots), sharex=True, squeeze=False)
-    axs = axs.flatten()
+    _, axes = plt.subplots(num_plots, 1, figsize=(figsize[0], \
+                    figsize[1]*num_plots), sharex=True, squeeze=False)
+    axes = axes.flatten()
 
     for key in plt_combinations:
-        plot_values(key, axs, headers, plt_map, param_mapping, \
-                    time_mapping)
+        axis = axes[plt_map[key[-3]]]
+        plot_values(key, axis, headers, plt_map[key[-3]] == 0, \
+                param_mapping, time_mapping)
 
-    axs[-1].set_xlabel("Time ($ms$)")
-    axs[0].legend(bbox_to_anchor=(0., 1.05, 1., .105), loc=3, \
+    axes[-1].set_xlabel("Time ($ms$)")
+    axes[0].legend(bbox_to_anchor=(0., 1.05, 1., .105), loc=3, \
                   mode="expand", borderaxespad=0.)
     plt.tight_layout()
     plt.savefig("current.png", dpi=300)
