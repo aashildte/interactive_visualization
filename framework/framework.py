@@ -56,8 +56,7 @@ def setup(widgets, folder, figsize, plt_setup):
 
     headers = param_headers + default_headers
     
-    num_columns = 1
     checkboxes, tabs = setup_widgets(widgets, headers, param_space)
     update = lambda **kw: update_args(headers, param_mapping, \
-                                      time_mapping, num_columns, figsize, kw)
+                                      time_mapping, figsize, kw)
     return update, checkboxes, tabs
