@@ -5,6 +5,7 @@
 """
 
 import glob
+import os
 import itertools
 import textwrap
 import numpy as np
@@ -13,17 +14,15 @@ import matplotlib.pyplot as plt
 from .value_structure import \
         read_values, define_param_mappings, setup_widgets
 
-
-def setup(widgets, files, figsize, plt_setup):
+def setup(widgets, folder, figsize, plt_setup):
     """
 
     Setup for everything.
 
     Args:
         widgets - widgets module
-        files - which files to give as input, list of npy files
-        figsize - how to scale the output plots, tuple of x dimension
-            overall and y dimension per plot
+        folder - folder containing relevant npy files
+        figsize - how to scale the subplots, (x, y) tuple
         plt_setup - string:
             "ms_points" gives plotting setup as defined in ms_points
             "avg_std_pacing" gives plotting as defined in avg_std_pacing
@@ -49,15 +48,16 @@ def setup(widgets, files, figsize, plt_setup):
         from .avg_std_pacing import update_args
         default_headers = ["Metric"]
 
+    files = os.path.join(folder, "*.npy")
+
     all_values = read_values(files)
     param_headers, param_space, time_mapping, param_mapping = \
                 define_param_mappings(all_values)
 
-    print(time_mapping.keys())
-
     headers = param_headers + default_headers
-
+    
+    num_columns = 1
     checkboxes, tabs = setup_widgets(widgets, headers, param_space)
     update = lambda **kw: update_args(headers, param_mapping, \
-                                      time_mapping, figsize, kw)
+                                      time_mapping, num_columns, figsize, kw)
     return update, checkboxes, tabs

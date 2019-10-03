@@ -58,7 +58,7 @@ def define_param_space(values):
     """
 
     input_params = list(values["input_params"].keys())
-    quantities = list(values["output_values"].keys())
+    quantities = set(values["output_values"].keys())
     ms_points = values["ms_points"]
     dimensions = values["dimensions"]
 
@@ -106,7 +106,8 @@ def _populate_param_mapping(output_values, key_ip, param_space, param_mapping):
         param_mapping - dictionary to populate
 
     """
-    quantities, ms_points, dimensions = param_space[-3:]
+    ms_points, dimensions = param_space[-2:]
+    quantities = output_values.keys()
     for qtt in quantities:
         _, num_ms_pts, num_dims = output_values[qtt].shape
 
@@ -143,7 +144,6 @@ def define_param_mappings(all_values):
     param_mapping = {}
     time_mapping = {}
 
-
     # iterate through all possible combinations
     # and save values accordingly
 
@@ -155,13 +155,15 @@ def define_param_mappings(all_values):
         key_ip = _populate_param_space(dataset["input_params"], param_space)
 
         # across different tracked output values
-        assert list(dataset["output_values"].keys()) == param_space[-3], \
-                "Error: Output values spaces don't match up."
+        #error_msg = "Error: Output values spaces don't match up; " + \
+        #                "{} != {}".format(dataset["output_values"].keys(), param_space[-3])
+        #assert list(dataset["output_values"].keys()) == param_space[-3], error_msg
+        for qt in dataset["output_values"]:
+            param_space[-3].add(qt)
+            time_mapping[key_ip + (qt, )] = dataset["time"]
 
         _populate_param_mapping(dataset["output_values"], key_ip, param_space, param_mapping)
-
-        # + time
-        time_mapping[key_ip] = dataset["time"]
+	
 
     for (i, elem) in enumerate(param_space):
         param_space[i] = list(elem)

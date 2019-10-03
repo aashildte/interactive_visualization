@@ -9,6 +9,7 @@ import itertools
 import textwrap
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 from .value_structure import valid_combination, get_all_combinations
 
@@ -35,10 +36,11 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
     try:
         key_avg = key + ("Average", "Vector norm")
         key_std = key + ("Standard deviation", "Vector norm")
-
-        time = time_mapping[key[:-1]]
+        key_pac = key + ("Pacing", "Vector norm")
+        time = time_mapping[key]
         values_avg = param_mapping[key_avg]
         values_std = param_mapping[key_std]
+        pacing = param_mapping[key_pac]
     except KeyError:
         print("No data found for key ", key)
         return
@@ -60,8 +62,8 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
         maxvalues = np.where(maxvalues < 1, maxvalues, np.ones(maxvalues.shape))
 
     # special case end
-
-    axis.plot(time, values_avg) #, label=label_str)
+    axis.plot(time, values_avg)
+    axis.plot(time, pacing)
     axis.fill_between(time, minvalues, \
             maxvalues, color='gray', alpha=0.5)
     axis.set_title(label_str)
@@ -69,7 +71,7 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
     axis.set_ylabel(key[-1])
 
 
-def update_args(headers, param_mapping, time_mapping, figsize, \
+def update_args(headers, param_mapping, time_mapping, num_columns, figsize, \
                 checkboxes):
     """
 
@@ -96,7 +98,8 @@ def update_args(headers, param_mapping, time_mapping, figsize, \
     _, plt_combinations = get_all_combinations(headers, checkboxes)
 
     num_plots = len(plt_combinations)
-    _, axes = plt.subplots(num_plots, 1, figsize=(figsize[0], \
+    num_rows = math.ceil(num_plots/num_columns)
+    _, axes = plt.subplots(num_rows, num_columns, figsize=(figsize[0]*num_rows, \
                     figsize[1]*num_plots), sharex=True, squeeze=False)
     axes = axes.flatten()
 
