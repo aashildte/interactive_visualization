@@ -167,6 +167,7 @@ def define_param_mappings(all_values):
 
     for (i, elem) in enumerate(param_space):
         param_space[i] = list(elem)
+        param_space[i].sort()
 
     return input_params, param_space, time_mapping, param_mapping
 
@@ -194,9 +195,7 @@ def setup_widgets(widgets, headers, param_space):
     # input parameters
 
     checkboxes = {}
-
-    #for (i, elem) in enumerate(param_space):
-    
+ 
     num_headers = len(headers)
 
     for i in range(num_headers):

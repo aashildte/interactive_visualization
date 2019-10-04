@@ -63,7 +63,8 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
 
     # special case end
     axis.plot(time, values_avg)
-    axis.plot(time, pacing)
+    if np.max(pacing) > 0:
+        axis.plot(time, pacing)
     axis.fill_between(time, minvalues, \
             maxvalues, color='gray', alpha=0.5)
     axis.set_title(label_str)
@@ -71,7 +72,7 @@ def plot_values(key, axis, headers, set_label, param_mapping, \
     axis.set_ylabel(key[-1])
 
 
-def update_args(headers, param_mapping, time_mapping, num_columns, figsize, \
+def update_args(headers, param_mapping, time_mapping, figsize, \
                 checkboxes):
     """
 
@@ -98,9 +99,8 @@ def update_args(headers, param_mapping, time_mapping, num_columns, figsize, \
     _, plt_combinations = get_all_combinations(headers, checkboxes)
 
     num_plots = len(plt_combinations)
-    num_rows = math.ceil(num_plots/num_columns)
-    _, axes = plt.subplots(num_rows, num_columns, figsize=(figsize[0]*num_rows, \
-                    figsize[1]*num_plots), sharex=True, squeeze=False)
+    _, axes = plt.subplots(num_plots, 1, figsize=(figsize[0], figsize[1]*num_plots), \
+                               sharex=True, squeeze=False)
     axes = axes.flatten()
 
     for (axis, key) in zip(axes, plt_combinations):
